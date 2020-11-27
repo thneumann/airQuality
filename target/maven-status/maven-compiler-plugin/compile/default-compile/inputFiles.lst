@@ -1,0 +1,11 @@
+/home/pi/Documents/CodeExamples/Java/GPIOBoard/src/main/java/de/tn8/impl/ActiveBuzzer.java
+/home/pi/Documents/CodeExamples/Java/GPIOBoard/src/main/java/de/tn8/impl/DigitalSwitch.java
+/home/pi/Documents/CodeExamples/Java/GPIOBoard/src/main/java/de/tn8/impl/BarGraph.java
+/home/pi/Documents/CodeExamples/Java/GPIOBoard/src/main/java/de/tn8/impl/DigitalLight.java
+/home/pi/Documents/CodeExamples/Java/GPIOBoard/src/main/java/de/tn8/impl/PassiveBuzzer.java
+/home/pi/Documents/CodeExamples/Java/GPIOBoard/src/main/java/de/tn8/impl/DHT11.java
+/home/pi/Documents/CodeExamples/Java/GPIOBoard/src/main/java/de/tn8/main/App.java
+/home/pi/Documents/CodeExamples/Java/GPIOBoard/src/main/java/de/tn8/impl/RGBLight.java
+/home/pi/Documents/CodeExamples/Java/GPIOBoard/src/main/java/de/tn8/impl/ADCADS7830.java
+/home/pi/Documents/CodeExamples/Java/GPIOBoard/src/main/java/de/tn8/impl/DimmableLight.java
+/home/pi/Documents/CodeExamples/Java/GPIOBoard/src/main/java/de/tn8/abstr/PWM.java
