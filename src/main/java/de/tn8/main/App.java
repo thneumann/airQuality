@@ -1,9 +1,6 @@
 package de.tn8.main;
 
-import com.pi4j.io.gpio.GpioController;
-import com.pi4j.io.gpio.GpioFactory;
-import com.pi4j.io.gpio.Pin;
-import com.pi4j.io.gpio.RaspiPin;
+import com.pi4j.io.gpio.*;
 import com.pi4j.io.gpio.event.GpioPinDigitalStateChangeEvent;
 import com.pi4j.io.gpio.event.GpioPinListenerDigital;
 import com.pi4j.io.i2c.I2CBus;
@@ -24,12 +21,15 @@ import java.util.List;
  * Hello world!
  */
 public class App {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
+
+
 
         final GpioController gpio = GpioFactory.getInstance();
 
+
         try {
-            AirQualityMonitor aqm = new AirQualityMonitor(new SerialConfig(),I2CBus.BUS_1, gpio,RaspiPin.GPIO_00, RaspiPin.GPIO_02, RaspiPin.GPIO_23, RaspiPin.GPIO_24, RaspiPin.GPIO_25, RaspiPin.GPIO_22, RaspiPin.GPIO_29, RaspiPin.GPIO_28);
+            AirQualityMonitor aqm = new AirQualityMonitor(new SerialConfig(),I2CBus.BUS_1, gpio,RaspiPin.GPIO_00, RaspiPin.GPIO_02, RaspiPin.GPIO_23, RaspiPin.GPIO_24, RaspiPin.GPIO_25, RaspiPin.GPIO_22, RaspiPin.GPIO_29, RaspiPin.GPIO_28, RaspiPin.GPIO_01);
 
             Thread airQualityThread = new Thread(aqm);
             airQualityThread.start();

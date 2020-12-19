@@ -10,10 +10,16 @@ import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
 import com.pi4j.gpio.extension.pcf.PCF8574Pin;
 import com.pi4j.wiringpi.Gpio;
+import de.tn8.monitor.AirQualityMonitor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 
 public class LCD1602 {
+
+    private static final Logger logger = LogManager.getLogger(LCD1602.class);
+
 
     //see datasheets for commands DB7 = MSB -> DB0 LSB
     private final static byte CLEARDISPLAY = 0x01;
@@ -107,22 +113,22 @@ public class LCD1602 {
     }
 
     private void sendCommand4BitMode(byte command) throws IOException, InterruptedException {
-        System.out.println("send command: " + Integer.toString(command, 2) + " = " + command);
+        logger.info("send command: " + Integer.toString(command, 2) + " = " + command);
         byte sendCommands [] = new byte[2];
         //send first 4 bits
-        System.out.println("Screen command: " + Integer.toString(0xf0 & command, 2));
-        System.out.println("Screen command with LCD Mode bits: " + Integer.toString(0xf0 & command | getCommandLCD1602CommandByte(), 2));
+        logger.info("Screen command: " + Integer.toString(0xf0 & command, 2));
+        logger.info("Screen command with LCD Mode bits: " + Integer.toString(0xf0 & command | getCommandLCD1602CommandByte(), 2));
         sendCommands[0] = (byte) (0xf0 & command | getCommandLCD1602CommandByte());
         //send last 4 bits
-        System.out.println("Screen command: " + Integer.toString(((0x0f & command) << 4), 2));
-        System.out.println("Screen command with LCD Mode bits: " + Integer.toString(((0x0f & command) << 4) | getCommandLCD1602CommandByte(), 2));
+        logger.info("Screen command: " + Integer.toString(((0x0f & command) << 4), 2));
+        logger.info("Screen command with LCD Mode bits: " + Integer.toString(((0x0f & command) << 4) | getCommandLCD1602CommandByte(), 2));
         sendCommands[1] = (byte) (((0x0f & command) << 4) | getCommandLCD1602CommandByte());
         sendDataToPCF8574(sendCommands);
     }
 
     private void sendDataToPCF8574(byte [] sendCommands) throws IOException, InterruptedException {
         for (int i = 0; i < sendCommands.length; i++){
-            System.out.println("sendDataToPCF8574: " + Integer.toString(sendCommands[i], 2) + " = " + sendCommands[i]);
+            logger.info("sendDataToPCF8574: " + Integer.toString(sendCommands[i], 2) + " = " + sendCommands[i]);
             device.write(sendCommands[i]);
             device.write( (byte) (sendCommands[i] | EPIN_ADDR));
             Thread.sleep(0, 500000);
@@ -134,7 +140,7 @@ public class LCD1602 {
     private void sendCharacter (char c) throws IOException, InterruptedException {
         setWriteMode();
 
-        System.out.println("Write character: " + c);
+        logger.info("Write character: " + c);
         sendCommand4BitMode((byte) c);
 
     }

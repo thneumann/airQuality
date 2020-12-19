@@ -3,6 +3,9 @@ package de.tn8.impl;
 import com.pi4j.io.gpio.*;
 import com.pi4j.wiringpi.Gpio;
 import de.tn8.listener.LCDListener;
+import de.tn8.monitor.AirQualityMonitor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 
 public class DHT11 implements Runnable{
 
+    private static final Logger logger = LogManager.getLogger(DHT11.class);
 
     private boolean threadActive=false;
     private Date lastDataUpdate = new Date();
@@ -35,8 +39,8 @@ public class DHT11 implements Runnable{
         lastDataUpdate.setTime(0);
 
         this.dht11GpioPin = gpioPin;
-        System.out.println("Use Data Pin: " + dht11GpioPin.getAddress());
-        System.out.println("Use Power Pin: " + gpioPowerPin.getAddress());
+        logger.info("Use Data Pin: " + dht11GpioPin.getAddress());
+        logger.info("Use Power Pin: " + gpioPowerPin.getAddress());
     }
 
     /**
@@ -82,7 +86,7 @@ public class DHT11 implements Runnable{
         while(Gpio.digitalRead(dht11GpioPin.getAddress()) == 0){
             if(Gpio.micros() - t  > TIMEOUT_MICRO_SECONDS){
                 //TODO throw Timeout exception;
-                System.out.println("Timeout first low");
+                logger.info("Timeout first low");
                 return false;
             }
         }
@@ -92,7 +96,7 @@ public class DHT11 implements Runnable{
             if(Gpio.micros() - t  > TIMEOUT_MICRO_SECONDS){
                 //TODO throw Timeout exception;
 
-                System.out.println("Timeout first high");
+                logger.info("Timeout first high");
                 return false;
             }
         }
@@ -118,16 +122,16 @@ public class DHT11 implements Runnable{
             if(time  < TIMEOUT_MICRO_SECONDS){
                 timeTaken[i] = time;
             }else{
-                System.out.println("Timeout in iteration " + i);
-                System.out.println(Arrays.toString(timeTaken));
+                logger.info("Timeout in iteration " + i);
+                logger.info(Arrays.toString(timeTaken));
                 return false;
             }
 
         }
 
-        System.out.println("Success");
+        logger.info("Success");
 
-        System.out.println(Arrays.toString(timeTaken));
+        logger.info(Arrays.toString(timeTaken));
 
         for(int i = 0; i < 40; i++) {
 
@@ -150,7 +154,7 @@ public class DHT11 implements Runnable{
             data = readData;
             return true;
         }
-        System.out.println("Checksum incorrect");
+        logger.info("Checksum incorrect");
         return false;
 
     }
@@ -177,8 +181,8 @@ public class DHT11 implements Runnable{
     }
 
     private boolean isCheckSumCorrect(int[] data){
-        System.out.println("Checksum calculation:");
-        System.out.println(Arrays.toString(data));
+        logger.info("Checksum calculation:");
+        logger.info(Arrays.toString(data));
         return (data[0] + data[1] + data[2] + data[3]) % 256 == data[4];
     }
 

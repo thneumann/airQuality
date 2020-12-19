@@ -2,12 +2,17 @@ package de.tn8.impl;
 
 import com.pi4j.io.serial.*;
 import de.tn8.listener.LCDListener;
+import de.tn8.monitor.AirQualityMonitor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MHZ19B implements Runnable{
+
+    private static final Logger logger = LogManager.getLogger(MHZ19B.class);
 
     private final Serial serial;
     private int ppm = -1;
@@ -20,14 +25,14 @@ public class MHZ19B implements Runnable{
 
     public MHZ19B(SerialConfig serialConfig) throws IOException, InterruptedException {
         this.serialConfig = serialConfig;
-        System.out.println("Serial Config:" + serialConfig);
+        logger.info("Serial Config:" + serialConfig);
          serial = SerialFactory.createInstance();
 
         serial.addListener(new SerialDataEventListener() {
             @Override
             public void dataReceived(SerialDataEvent serialDataEvent) {
                 try {
-                    System.out.println(serialDataEvent.getHexByteString());
+                    logger.info(serialDataEvent.getHexByteString());
                     byte [] response = serialDataEvent.getBytes();
 
                     int checksum = 0;
@@ -36,11 +41,12 @@ public class MHZ19B implements Runnable{
                         checksum += response[i]& 0xff;
                     }
                     checksum %= 255;
-                    checksum = 256 - checksum;
+                    checksum = 255 - checksum;
                     checksum++;
-                    System.out.println(checksum);
-                    if(checksum == (response[8]&0xff)){
-                        System.out.println("ppm: " + (256*(int)response[2]+(response[3] & 0xff)));
+                    logger.info(checksum);
+                    //allow checksum to be different by 1
+                    if(checksum == (response[8]&0xff) || checksum+1 == (response[8]&0xff) ){
+                        logger.info("ppm: " + (256*(int)response[2]+(response[3] & 0xff)));
                         ppm = (256*(int)response[2]+(response[3] & 0x7F) + (response[3]&0x80));
                         checksumCorrect = true;
                     }else {
@@ -56,7 +62,7 @@ public class MHZ19B implements Runnable{
     }
 
     public void init(SerialConfig config) throws IOException {
-        System.out.println(config + " Serial closed: " + serial.isClosed());
+        logger.info(config + " Serial closed: " + serial.isClosed());
 
         serial.open(config);
     }
@@ -86,7 +92,7 @@ public class MHZ19B implements Runnable{
             checksumCorrect = false;
             while(!checksumCorrect) {
                 serial.write(generateReceiveDataCommand());
-                Thread.sleep(1000);
+                Thread.sleep(2000);
             }
         return ppm;
     }

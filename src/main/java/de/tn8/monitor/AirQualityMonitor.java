@@ -10,6 +10,8 @@ import com.pi4j.io.i2c.I2CFactory;
 import com.pi4j.io.serial.SerialConfig;
 import de.tn8.impl.*;
 import de.tn8.listener.LCDListener;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -20,6 +22,7 @@ import java.util.Date;
 
 public class AirQualityMonitor implements Runnable{
 
+    private static final Logger logger = LogManager.getLogger(AirQualityMonitor.class);
 
     private MHZ19B mhz19B;
     private LCD1602 lcd;
@@ -29,7 +32,9 @@ public class AirQualityMonitor implements Runnable{
     private DigitalLight blueLight;
     private DigitalLight greenLight;
 
-    private ActiveBuzzer activeBuzzer;
+    //private Thread buzzerThread;
+    private PassiveBuzzer passiveBuzzer;
+    private ActiveBuzzer buzzer;
     private DigitalSwitch digitalSwitch;
     private DigitalSwitch slideSwitch;
 
@@ -39,22 +44,27 @@ public class AirQualityMonitor implements Runnable{
     private boolean stop = false;
     private boolean mute = false;
 
-    public AirQualityMonitor(SerialConfig serialConfig, int i2cbus, GpioController gpio, Pin dht11GpioPin, Pin dht11GpioPowerPin, Pin redLED, Pin greenLED, final Pin blueLED, Pin activeBuzzerPin, Pin digitalSwitchPin, Pin slideSwitchPin) throws IOException, InterruptedException, I2CFactory.UnsupportedBusNumberException {
+    public AirQualityMonitor(SerialConfig serialConfig, int i2cbus, GpioController gpio, Pin dht11GpioPin, Pin dht11GpioPowerPin, Pin redLED, Pin greenLED, final Pin blueLED, Pin buzzerPin, Pin digitalSwitchPin, Pin slideSwitchPin, Pin passiveBuzzerPin) throws IOException, InterruptedException, I2CFactory.UnsupportedBusNumberException {
 
-        System.out.println("init LEDs");
+        logger.info("init LEDs");
         redLight = new DigitalLight(redLED, gpio);
         blueLight = new DigitalLight(blueLED, gpio);
         greenLight = new DigitalLight(greenLED, gpio);
 
         greenLight.turnOn();
-
-        activeBuzzer = new ActiveBuzzer(activeBuzzerPin, gpio);
+        buzzer = new ActiveBuzzer(buzzerPin, gpio);
+        passiveBuzzer = new PassiveBuzzer(passiveBuzzerPin, gpio);
+        //buzzerThread = new Thread(buzzer);
+        //buzzerThread.start();
         digitalSwitch = new DigitalSwitch(digitalSwitchPin, gpio);
 
         digitalSwitch.addListener(new GpioPinListenerDigital() {
             @Override
             public void handleGpioPinDigitalStateChangeEvent(GpioPinDigitalStateChangeEvent gpioPinDigitalStateChangeEvent) {
-                activeBuzzer.turnOff();
+                if(gpioPinDigitalStateChangeEvent.getState().isHigh()){
+                    passiveBuzzer.turnOff();
+                }
+                buzzer.turnOff();
                 redLight.turnOff();
                 if(mute){
                     blueLight.turnOn();
@@ -70,21 +80,19 @@ public class AirQualityMonitor implements Runnable{
                 if(gpioPinDigitalStateChangeEvent.getState().isLow()){
                     buttonSwitchHoldDown = LocalDateTime.now();
                 }else{
-                    if(ChronoUnit.SECONDS.between(buttonSwitchHoldDown, LocalDateTime.now()) > 20){
-                        if(!activeBuzzer.isActive()){
-                            activeBuzzer.turnOn();
-                            System.out.println("Send zero Point Calibration");
-                            try {
-                                mhz19B.sendZeroPointCalibration();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
+                    logger.info("Hold: " + ChronoUnit.SECONDS.between(buttonSwitchHoldDown, LocalDateTime.now()));
+                    if(ChronoUnit.SECONDS.between(buttonSwitchHoldDown, LocalDateTime.now()) > 10){
+                        if(!buzzer.isActive()){
+                            buzzer.turnOn();
+                                //mhz19B.sendZeroPointCalibration();
+                                logger.info("Here you could send a zero point calibration");
+                                passiveBuzzer.playRandomSong();
                             try {
                                 Thread.sleep(1000);
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
                             }
-                            activeBuzzer.turnOff();
+                            buzzer.turnOff();
                         }
                     }
                 }
@@ -114,14 +122,14 @@ public class AirQualityMonitor implements Runnable{
         }
 
 
-        System.out.println("init MHZ19B");
+        logger.info("init MHZ19B");
         mhz19B = new MHZ19B(serialConfig);
-        System.out.println("init LCD");
+        logger.info("init LCD");
         lcd = new LCD1602(i2cbus);
         Thread.sleep(3000);
         lcd.init4bitMode();
         Thread.sleep(3000);
-        System.out.println("init DHT11");
+        logger.info("init DHT11");
         dht11 = new DHT11(dht11GpioPin, gpio, dht11GpioPowerPin);
         Thread.sleep(3000);
 
@@ -165,11 +173,11 @@ public class AirQualityMonitor implements Runnable{
     }
 
     private String generatePPMString(){
-        return "CO2: " + mhz19B.getPpm() + " PPM";
+        return "CO2: " + mhz19B.getPpm() + " PPM   ";
     }
 
     private String generateTemperatureHumidityString(){
-        return dht11.getTemperature() + ((char)0xDF + "C, ") + dht11.getHumidity() + "%RH";
+        return dht11.getTemperature() + ((char)0xDF + "C, ") + dht11.getHumidity() + "%RH ";
     }
 
     private void startAlarm(){
@@ -178,7 +186,7 @@ public class AirQualityMonitor implements Runnable{
             blueLight.turnOff();
             redLight.turnOn();
             if(!mute){
-                activeBuzzer.turnOn();
+                buzzer.turnOn();
             }
             lastAlarm = LocalDateTime.now();
         }
